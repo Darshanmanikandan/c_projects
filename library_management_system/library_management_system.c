@@ -28,12 +28,12 @@ struct members {
 
 typedef struct members membership;
 
-void home();
-void menu();
-void member_details();
-void add_member();
-void get_books();
-int is_duplicate(char *name);
+void home();    // contains the home page 
+void menu();    // displays the book catalogue 
+void member_details();   // check for the member exist 
+void add_member();  //add a new member if does not exist 
+void get_books();   // order a book 
+int is_duplicate(char *file_name,char *name); // check for a duplicate entry  
 
 // Function pointer array
 void (*functions[])() = {home, menu, member_details, get_books, add_member};
@@ -121,7 +121,7 @@ void member_details() {
     getchar();
     
     scanf("%c", &opt);
-    opt = tolower(opt);     
+     opt = tolower(opt);     
         switch(opt) {
             case 'a': functions[4](); break;
             case 'q': exit(0); break;
@@ -131,7 +131,8 @@ void member_details() {
 
 void add_member() {   
     membership member_data;
-    FILE *fp = fopen("user.csv", "a+");
+    char file_name[]="user.csv";
+    FILE *fp = fopen(file_name, "a+");
     if (!fp) {
         fprintf(stderr, "File access failed...\n");
         exit(EXIT_FAILURE);
@@ -147,17 +148,18 @@ void add_member() {
         return;
     }
 
-    if (is_duplicate(member_data.name) == -1) {
+    if (is_duplicate(file_name,member_data.name) == -1) {
         fprintf(stderr, "Username already exists.\n");
         fclose(fp);
         return;
     }
 
     printf("Enter your mobile number: ");
-    scanf("%s", member_data.phone);
+    scanf("%10s", member_data.phone);
 
-    srand(time(NULL));
-    member_data.id = rand() % 9000 + 1000; 
+    //generating four sigit random integer id for each of the user 
+        srand(time(NULL));   // this function would seed the rand function ,ensures that the rand() returns a unique value each time it is being called 
+        member_data.id = rand() % 9000 + 1000; 
 
     printf("Your user ID: %4d\n", member_data.id);
     fprintf(fp, "%d,%s,%s\n", member_data.id, member_data.name, member_data.phone);
@@ -165,8 +167,8 @@ void add_member() {
     fclose(fp);
 }
 
-int is_duplicate(char *name) {  
-    FILE *fp = fopen("user.csv", "r");
+int is_duplicate(char *file_name,char *name) {  
+    FILE *fp = fopen(file_name, "r");
     if (!fp) {
         fprintf(stderr, "Error: Could not open file\n");
         return 1;
@@ -193,6 +195,7 @@ void get_books() {
         return;
     }
 
+// list the books from the file 
     char line[MAX_LINE];
     printf("\n📚 Available Books 📚\n");
         while (fgets(line, sizeof(line), fp)) {
@@ -201,11 +204,11 @@ void get_books() {
     fclose(fp);
 
     char book_choice[MAX_LEN];
-    printf("\nEnter the book title to order: ");
+    printf("\nEnter the book title [ As it is in the catalog ] to order: ");
     getchar();
     
     fgets(book_choice, sizeof(book_choice), stdin);
-    book_choice[strcspn(book_choice, "\n")] = 0;  // Remove newline character
+    book_choice[strcspn(book_choice, "\n")] = 0;  // Remove newline character 
 
     FILE *order_fp = fopen("orders.csv", "a");
         if (!order_fp) {
@@ -213,8 +216,13 @@ void get_books() {
             return;
         }
 
-    fprintf(order_fp, "%s\n", book_choice);
+    char file_name[]="book.csv";  
+ // check of the book availability in the file book.csv 
+        if(is_duplicate(file_name,book_choice) == -1){
+            fprintf(order_fp, "%s\n", book_choice); 
+            printf("Book \"%s\" ordered successfully!\n", book_choice);
+        } else{
+            fprintf(stderr,"%s","the book is out of stock");
+        }
     fclose(order_fp);
-
-    printf("Book \"%s\" ordered successfully!\n", book_choice);
 }
